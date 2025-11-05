@@ -16,7 +16,8 @@ print(df.describe())
 #Select only numerical and scale
 numeric_df = df.select_dtypes(include=['number', 'bool'])
 scaler = StandardScaler()
-scaled_df = StandardScaler().fit_transform(numeric_df)
+scaled_arr = scaler.fit_transform(numeric_df.values)
+scaled_df = pd.DataFrame(scaled_arr, columns=numeric_df.columns, index=numeric_df.index)
 
 #Plot to detemine how many clusters would be optimal
 Kmeans_kwargs = {
