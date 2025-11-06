@@ -1,55 +1,48 @@
 import os
 import pandas as pd
 import matplotlib.pyplot as plt
-from sklearn.preprocessing import StandardScaler
-from sklearn.metrics import silhouette_score
-from sklearn.cluster import KMeans
+from sklearn.metrics import adjusted_rand_score, homogeneity_score, completeness_score
 
-# load data
+# === Load datasets ===
 base_dir = os.path.dirname(__file__)
-csv_path = os.path.join(base_dir, "dogs_cluster_results.csv")
+kmeans_path = os.path.join(base_dir, "dogs_kmeans_results.csv")
+gmm_path = os.path.join(base_dir, "dogs_gmm_results.csv")
+hier_path = os.path.join(base_dir, "dogs_hierarchical_results.csv")
 
-df = pd.read_csv(csv_path)
-print(f"✅ Loaded dataset with shape: {df.shape}")
+kmeans_df = pd.read_csv(kmeans_path)
+gmm_df = pd.read_csv(gmm_path)
+hier_df = pd.read_csv(hier_path)
 
-# Select numeric columns (for consistent scoring)
-X = df.select_dtypes(include=["number"])
-scaler = StandardScaler()
-X_scaled = scaler.fit_transform(X)
+# === Align them (just in case indexes differ) ===
+merged = kmeans_df.copy()
+merged["Cluster_GMM"] = gmm_df["Cluster_GMM"]
+merged["Cluster_Hier"] = hier_df["Cluster_Hier"]
 
+print("✅ Data merged successfully")
+print(merged.head())
 
-# k-means
+# === Compare clusters quantitatively ===
+def compare_clusters(a, b, label1, label2):
+    ari = adjusted_rand_score(a, b)
+    homo = homogeneity_score(a, b)
+    comp = completeness_score(a, b)
+    print(f"\n🔹 Comparison: {label1} vs {label2}")
+    print(f"Adjusted Rand Index: {ari:.3f}")
+    print(f"Homogeneity: {homo:.3f}")
+    print(f"Completeness: {comp:.3f}")
 
-print("\n🔹 Running K-Means for comparison...")
-kmeans = KMeans(n_clusters=4, random_state=42)
-labels_kmeans = kmeans.fit_predict(X_scaled)
-sil_kmeans = silhouette_score(X_scaled, labels_kmeans)
-print(f"K-Means Silhouette Score: {sil_kmeans:.3f}")
+compare_clusters(merged["Cluster_KMeans"], merged["Cluster_GMM"], "KMeans", "GMM")
+compare_clusters(merged["Cluster_KMeans"], merged["Cluster_Hier"], "KMeans", "Hierarchical")
+compare_clusters(merged["Cluster_GMM"], merged["Cluster_Hier"], "GMM", "Hierarchical")
 
-
-# gmm & hierarchial
-
-labels_gmm = df["Cluster_GMM"]
-labels_hier = df["Cluster_Hierarchical"]
-
-sil_gmm = silhouette_score(X_scaled, labels_gmm)
-sil_hier = silhouette_score(X_scaled, labels_hier)
-
-print(f"GMM Silhouette Score: {sil_gmm:.3f}")
-print(f"Hierarchical Silhouette Score: {sil_hier:.3f}")
-
-# visualize the scores
-methods = ["K-Means", "GMM", "Hierarchical"]
-scores = [sil_kmeans, sil_gmm, sil_hier]
-
-plt.figure(figsize=(7, 5))
-plt.bar(methods, scores, color=["#66c2a5", "#fc8d62", "#8da0cb"])
-plt.title("Cluster Quality Comparison (Silhouette Scores)")
-plt.ylabel("Silhouette Score")
-plt.ylim(0, 1)
-for i, v in enumerate(scores):
-    plt.text(i, v + 0.02, f"{v:.3f}", ha="center", fontweight="bold")
+# === Simple visualization ===
+plt.figure(figsize=(6, 4))
+plt.hist(merged["Cluster_KMeans"], alpha=0.5, label="KMeans")
+plt.hist(merged["Cluster_GMM"], alpha=0.5, label="GMM")
+plt.hist(merged["Cluster_Hier"], alpha=0.5, label="Hierarchical")
+plt.legend()
+plt.title("Cluster Label Distribution Across Methods")
+plt.xlabel("Cluster Label")
+plt.ylabel("Count")
 plt.tight_layout()
 plt.show()
-
-print("\n Comparison complete! Check the bar chart above.")

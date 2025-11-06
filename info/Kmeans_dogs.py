@@ -35,7 +35,7 @@ for k in range(1, 5):
 #visualize the results
 plt.plot(range(1, 5), sse, marker ="o")
 plt.xticks(range(1, 5))
-plt.xlabel("Number of Clusters")
+plt.xlabel("Number of Clusters(k)")
 plt.ylabel("SSE")
 plt.title("Elbow Method for Optimal K")
 plt.show()
